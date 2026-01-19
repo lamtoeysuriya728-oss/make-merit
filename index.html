@@ -76,7 +76,7 @@
         <div class="text-center mb-12">
             <h1 class="text-5xl font-bold text-amber-900 mb-4">รายนามผู้ร่วมทำบุญ</h1>
             <div class="h-1 w-32 bg-amber-500 mx-auto rounded-full mb-4"></div>
-            <p class="text-amber-800 text-lg">ขออนุโมทนาบุญและขอบพระคุณในกุศลเจตนาของทุกท่าน</p>
+            <p class="text-amber-800 text-lg">ขออนุโมทนาบุญผู้บริหารทุกท่านด้วยครับ</p>
         </div>
 
         <!-- ส่วนการชำระเงินและ QR Code -->
@@ -85,7 +85,7 @@
                 <!-- QR Code Section -->
                 <div class="text-center">
                     <div class="inline-block p-4 bg-white rounded-3xl border-4 border-amber-100 shadow-inner">
-                        <img src="https://img2.pic.in.th/59262_0.md.jpg" alt="[รูปภาพคิวอาร์โค้ดสำหรับบริจาค]" class="w-48 h-48 rounded-xl object-contain mx-auto">
+                        <img src="https://img2.pic.in.th/59262_0318ef5eff65ac5ba.md.jpg"[รูปภาพคิวอาร์โค้ดสำหรับบริจาค]" class="w-48 h-48 rounded-xl object-contain mx-auto">
                         <p class="mt-3 font-bold text-amber-700">สแกนเพื่อร่วมทำบุญ</p>
                     </div>
                 </div>
@@ -116,13 +116,18 @@
             </div>
         </div>
 
-        <!-- ส่วนตารางรายชื่อแบบแยกคอลัมน์ -->
+        <!-- ส่วนตารางรายชื่อ -->
         <div class="main-card shadow-2xl overflow-hidden">
-            <div class="bg-amber-800 p-5">
+            <div class="bg-amber-800 p-5 flex justify-between items-center">
                 <h2 class="text-white text-xl font-bold flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l4 4v10a2 2 0 01-2 2z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 4v4h4" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 8h1M9 12h5m-5 4h5" /></svg>
                     บัญชีรายนามผู้ร่วมกุศล
                 </h2>
+                <div class="bg-amber-700 px-4 py-2 rounded-xl border border-amber-600">
+                    <span class="text-amber-200 text-sm">ยอดรวมทั้งหมด:</span>
+                    <span id="totalDisplay" class="text-white font-bold ml-2 text-lg">0</span>
+                    <span class="text-amber-200 text-sm ml-1">บาท</span>
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
@@ -140,6 +145,12 @@
                             <td colspan="5" class="p-12 text-center text-amber-500 italic">กำลังเชื่อมต่อข้อมูลจากระบบ...</td>
                         </tr>
                     </tbody>
+                    <tfoot class="bg-amber-50/50">
+                        <tr>
+                            <td colspan="4" class="p-5 text-right font-bold text-amber-900">รวมยอดทำบุญทั้งสิ้น:</td>
+                            <td id="tableTotal" class="p-5 text-right font-black text-emerald-700 text-xl border-t-2 border-amber-200">0.00</td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </div>
@@ -150,9 +161,8 @@
     </div>
 
     <script>
-        // ลิงก์ดึงข้อมูล CSV จาก Google Sheets ที่คุณระบุ (ID: 1Oa8U7R2Xn6CfNVguT9nTUnT0OWj1Zl8iEfg532_IdKk)
-        // ต้องทำ 'Publish to web' เป็นรูปแบบ CSV ก่อนครับ
-        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRyXvPC5fEDzuCjkbzvC0qQYC7bZ1xOl38fRrT1k7lvMvwMMhOin_Q3bnokFUQO1WNr1p1e1Z1f50WT/pub?output=csv';
+        // ลิงก์ดึงข้อมูล CSV จาก Google Sheets
+        const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRyXvPC5fEDzuCjkbzvC0qQYC7bZ1xOl38fRrT1k7lvMvwMMhOin_Q3bnokFUQO1WNr1p1e1Z1f50WT/pubhtml';
 
         function copyAccount() {
             const rawNumber = "0221756840";
@@ -185,9 +195,9 @@
 
                 let tableHtml = '';
                 let marqueeString = 'ขออนุโมทนาบุญกับ: ';
+                let totalAmount = 0;
 
                 rows.forEach((row, index) => {
-                    // ใช้ regex เพื่อแยก CSV ที่อาจมีเครื่องหมายคำพูดครอบชื่อที่มีคอมม่าอยู่ภายใน
                     const cols = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || row.split(',');
                     const cleanCols = cols.map(c => c.trim().replace(/^"|"$/g, ''));
                     
@@ -197,7 +207,9 @@
                         const type = cleanCols[2] || 'โอน';
                         const position = cleanCols[3] || '-';
 
-                        const typeStyle = type === 'เงินสด' 
+                        totalAmount += amount;
+
+                        const typeStyle = type.includes('เงินสด') 
                             ? 'bg-amber-100 text-amber-800' 
                             : 'bg-emerald-100 text-emerald-800';
 
@@ -215,21 +227,25 @@
                             </tr>
                         `;
 
-                        marqueeString += `${name} ${position !== '-' ? '('+position+')' : ''} ${amount.toLocaleString()}.- • `;
+                        marqueeString += `${name} ${amount.toLocaleString()}.- • `;
                     }
                 });
 
                 document.getElementById('meritTableBody').innerHTML = tableHtml || '<tr><td colspan="5" class="p-12 text-center">ยังไม่มีข้อมูลในระบบ</td></tr>';
                 document.getElementById('marqueeContent').innerText = marqueeString + " ขอขอบพระคุณทุกท่านเป็นอย่างสูง ";
+                
+                const formattedTotal = totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                document.getElementById('totalDisplay').innerText = totalAmount.toLocaleString();
+                document.getElementById('tableTotal').innerText = formattedTotal;
 
             } catch (error) {
                 console.error('Data Fetch Error:', error);
-                document.getElementById('meritTableBody').innerHTML = '<tr><td colspan="5" class="p-12 text-center text-red-500">กรุณาตั้งค่า "เผยแพร่ไปยังเว็บ" (CSV) ใน Google Sheets เพื่อดึงข้อมูลรายชื่อ</td></tr>';
+                document.getElementById('meritTableBody').innerHTML = '<tr><td colspan="5" class="p-12 text-center text-red-500 font-bold">กรุณานำลิงก์จาก Google Sheets (CSV) มาใส่ในโค้ดเพื่อเริ่มใช้งาน</td></tr>';
             }
         }
 
         window.onload = fetchMeritData;
-        setInterval(fetchMeritData, 300000); // อัปเดตทุก 5 นาที
+        setInterval(fetchMeritData, 300000);
     </script>
 </body>
 </html>
