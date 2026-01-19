@@ -173,7 +173,7 @@
 
         async function fetchMeritData() {
             try {
-                const response = await fetch(sheetUrl);
+                const response = await fetch(รายชื่อ);
                 const data = await response.text();
                 const rows = data.split('\n').filter(row => row.trim() !== '').slice(1);
                 
