@@ -76,21 +76,19 @@
         <div class="text-center mb-12">
             <h1 class="text-5xl font-bold text-amber-900 mb-4">รายนามผู้ร่วมทำบุญ</h1>
             <div class="h-1 w-32 bg-amber-500 mx-auto rounded-full mb-4"></div>
-            <p class="text-amber-800 text-lg">ขออนุโมทนาบุญผู้บริหารทุกท่านด้วยครับ</p>
+            <p class="text-amber-800 text-lg">ขออนุโมทนาบุญและขอบพระคุณในกุศลเจตนาของทุกท่าน</p>
         </div>
 
         <!-- ส่วนการชำระเงินและ QR Code -->
         <div class="main-card p-8 mb-12 shadow-xl">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                <!-- QR Code Section -->
                 <div class="text-center">
                     <div class="inline-block p-4 bg-white rounded-3xl border-4 border-amber-100 shadow-inner">
-                        <img src="https://img2.pic.in.th/59262_0318ef5eff65ac5ba.md.jpg"[รูปภาพคิวอาร์โค้ดสำหรับบริจาค]" class="w-48 h-48 rounded-xl object-contain mx-auto">
+                        <img src="https://img2.pic.in.th/59262_0.md.jpg" alt="[คิวอาร์โค้ดบริจาค]" class="w-48 h-48 rounded-xl object-contain mx-auto" onerror="this.src='https://via.placeholder.com/200?text=QR+Code'">
                         <p class="mt-3 font-bold text-amber-700">สแกนเพื่อร่วมทำบุญ</p>
                     </div>
                 </div>
 
-                <!-- Account Info Section -->
                 <div class="payment-box p-8 rounded-3xl relative">
                     <h3 class="text-xl font-bold text-amber-900 mb-6 flex items-center justify-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
@@ -161,8 +159,9 @@
     </div>
 
     <script>
-        // ลิงก์ดึงข้อมูล CSV จาก Google Sheets
+        // เปลี่ยน URL ตรงนี้ให้เป็นลิงก์ "เผยแพร่เป็น CSV" จาก Google Sheets ของคุณ
         const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRyXvPC5fEDzuCjkbzvC0qQYC7bZ1xOl38fRrT1k7lvMvwMMhOin_Q3bnokFUQO1WNr1p1e1Z1f50WT/pub?output=csv';
+
         function copyAccount() {
             const rawNumber = "0221756840";
             if (navigator.clipboard) {
@@ -186,26 +185,42 @@
 
         async function fetchMeritData() {
             try {
+                // ตรวจสอบว่า URL ถูกต้องหรือไม่
+                if (sheetUrl.includes('YourIDHere')) {
+                    throw new Error('กรุณาแก้ไขลิงก์ sheetUrl ในส่วนของสคริปต์ให้เป็นลิงก์ Google Sheets ของคุณ');
+                }
+
                 const response = await fetch(sheetUrl);
-                if (!response.ok) throw new Error('Network response was not ok');
+                if (!response.ok) throw new Error('ไม่สามารถเข้าถึงข้อมูลได้ (Network response was not ok)');
                 
                 const data = await response.text();
-                const rows = data.split('\n').filter(row => row.trim() !== '').slice(1);
+                const rows = data.split(/\r?\n/).filter(row => row.trim() !== '').slice(1);
 
                 let tableHtml = '';
                 let marqueeString = 'ขออนุโมทนาบุญกับ: ';
                 let totalAmount = 0;
 
                 rows.forEach((row, index) => {
-                    const cols = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || row.split(',');
-                    const cleanCols = cols.map(c => c.trim().replace(/^"|"$/g, ''));
+                    // การแยกข้อมูลแบบ CSV ที่รองรับเครื่องหมายคำพูด (Quote)
+                    const cleanCols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.trim().replace(/^"|"$/g, ''));
                     
                     if (cleanCols.length >= 2 && cleanCols[0] !== "") {
-                        const name = cleanCols[0];
-                        const amount = isNaN(cleanCols[1].replace(/,/g, '')) ? 0 : Number(cleanCols[1].replace(/,/g, ''));
-                        const type = cleanCols[2] || 'โอน';
-                        const position = cleanCols[3] || '-';
+                        // หากมีชื่ออยู่ในช่องแรก (A) และนามสกุลแยกอยู่ช่องที่สอง (B) ให้เอามารวมกัน
+                        // แต่ถ้าช่องแรกคือชื่อ-นามสกุลอยู่แล้ว ก็จะดึงมาตามปกติ
+                        let name = cleanCols[0];
+                        let amountStr = cleanCols[1];
+                        let type = cleanCols[2] || 'โอน';
+                        let position = cleanCols[3] || '-';
 
+                        // ตรวจสอบว่าคอลัมน์ 1 เป็นตัวเลขหรือไม่ ถ้าไม่ใช่ แสดงว่าคอลัมน์ 1 อาจเป็นนามสกุล
+                        if (isNaN(amountStr.replace(/,/g, ''))) {
+                            name = cleanCols[0] + ' ' + cleanCols[1];
+                            amountStr = cleanCols[2] || '0';
+                            type = cleanCols[3] || 'โอน';
+                            position = cleanCols[4] || '-';
+                        }
+
+                        const amount = isNaN(amountStr.replace(/,/g, '')) ? 0 : Number(amountStr.replace(/,/g, ''));
                         totalAmount += amount;
 
                         const typeStyle = type.includes('เงินสด') 
@@ -225,7 +240,6 @@
                                 </td>
                             </tr>
                         `;
-
                         marqueeString += `${name} ${amount.toLocaleString()}.- • `;
                     }
                 });
@@ -233,18 +247,26 @@
                 document.getElementById('meritTableBody').innerHTML = tableHtml || '<tr><td colspan="5" class="p-12 text-center">ยังไม่มีข้อมูลในระบบ</td></tr>';
                 document.getElementById('marqueeContent').innerText = marqueeString + " ขอขอบพระคุณทุกท่านเป็นอย่างสูง ";
                 
-                const formattedTotal = totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
                 document.getElementById('totalDisplay').innerText = totalAmount.toLocaleString();
-                document.getElementById('tableTotal').innerText = formattedTotal;
+                document.getElementById('tableTotal').innerText = totalAmount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
 
             } catch (error) {
                 console.error('Data Fetch Error:', error);
-                document.getElementById('meritTableBody').innerHTML = '<tr><td colspan="5" class="p-12 text-center text-red-500 font-bold">กรุณานำลิงก์จาก Google Sheets (CSV) มาใส่ในโค้ดเพื่อเริ่มใช้งาน</td></tr>';
+                document.getElementById('meritTableBody').innerHTML = `
+                    <tr>
+                        <td colspan="5" class="p-12 text-center">
+                            <div class="bg-red-50 text-red-700 p-4 rounded-xl border border-red-200 inline-block">
+                                <p class="font-bold">เกิดข้อผิดพลาดในการดึงข้อมูล</p>
+                                <p class="text-sm mt-1">${error.message}</p>
+                                <p class="text-xs mt-2 opacity-70">โปรดตรวจสอบว่าคุณได้ทำการ "เผยแพร่ไปยังเว็บ" (Publish to web) เป็นไฟล์ CSV แล้ว</p>
+                            </div>
+                        </td>
+                    </tr>`;
             }
         }
 
         window.onload = fetchMeritData;
-        setInterval(fetchMeritData, 300000);
+        setInterval(fetchMeritData, 300000); // อัปเดตทุก 5 นาที
     </script>
 </body>
 </html>
